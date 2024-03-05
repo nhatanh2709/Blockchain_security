@@ -24,6 +24,10 @@ contract VRFD20 is VRFConsumerBaseV2, ConfirmedOwner {
     uint32 callbackGasLimit = 1;
     uint16 requestConfirmations = 3;
     uint32 numWords = 2;
+    constructor(uint64 subscriptionId) VRFConsumerBaseV2(vrfCoordinator) ConfirmedOwner(msg.sender) {
+        COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
+        s_subscriptionId = subscriptionId;
+    }
     function requestRandomWords() external  onlyOwner returns (uint256 requestId) 
     {
         requestId = COORDINATOR.requestRandomWords(
@@ -42,56 +46,20 @@ contract VRFD20 is VRFConsumerBaseV2, ConfirmedOwner {
         emit RequestSent(requestId, numWords);
         return requestId;
     }
+    function fulfillRandomWords(
+        uint256 _requestId,
+        uint256[] memory _randomWords
+    ) internal override {
+        require(s_requests[_requestId].exists,"require not found");
+        s_requests[_requestId].fulfilled = true;
+        s_requests[_requestId].randomWords = _randomWords;
+        emit RequestFulfilled(_requestId, _randomWords);
+    }
 
+    function getRequestStatus(uint256 _requestId) external view returns (bool fulfilled ,uint256[] memory randomWords)
+    {
+        require(s_requests[_requestId].exists, "request not found");
+        RequestStatus memory request = s_requests[_requestId];
+        return (request.fulfilled, request.randomWords);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    
+    }
